@@ -3,54 +3,62 @@ import "./App.css";
 
 function App() {
   const [user, setUser] = useState(null);
+  const [clicks, setClicks] = useState(0); // Количество монет
+  const [lvl, setLvl] = useState(1); // Уровень прокачки
 
   useEffect(() => {
     const tg = window.Telegram?.WebApp;
+    if (tg) {
+      tg.expand();
+      setUser(tg.initDataUnsafe?.user);
 
-    if (!tg) {
-      console.log("Открой через Telegram ❗");
-      return;
+      // Настраиваем главную кнопку TG как кнопку "Upgrade"
+      tg.MainButton.setText(`Прокачать уровень (Цена: ${lvl * 10})`);
+      tg.MainButton.show();
+
+      tg.MainButton.onClick(() => {
+        upgradeLvl();
+      });
     }
+  }, [lvl]); // Обновляем кнопку при изменении уровня
 
-    tg.expand();
+  const addClick = () => {
+    setClicks(clicks + lvl); // Прирост зависит от уровня
+    window.Telegram?.WebApp.HapticFeedback.impactOccurred("medium"); // Вибрация при клике
+  };
 
-    const userData = tg.initDataUnsafe?.user;
-
-    if (userData) {
-      setUser(userData);
+  const upgradeLvl = () => {
+    const price = lvl * 10;
+    if (clicks >= price) {
+      setClicks(clicks - price);
+      setLvl(lvl + 1);
+      window.Telegram?.WebApp.showAlert("Уровень повышен! 🚀");
+    } else {
+      window.Telegram?.WebApp.showAlert("Не хватает монет! 🪙");
     }
-
-    tg.MainButton.setText("🚀 Click me");
-    tg.MainButton.show();
-
-    tg.MainButton.onClick(() => {
-      tg.showAlert("Ты нажал кнопку 😎");
-    });
-
-  }, []);
+  };
 
   return (
     <div className="app">
-      <h1>Telegram Mini App 🚀</h1>
+      <div className="header">
+        <span>👤 {user?.first_name || "Player"}</span>
+        <span>🏆 LVL: {lvl}</span>
+      </div>
 
-      {user ? (
-        <div>
-          <p>👤 {user.first_name}</p>
-          <p>🆔 {user.id}</p>
-          <p>📛 @{user.username || "no_username"}</p>
-          <pre>{JSON.stringify(user, null, 2)}</pre>
+      <div className="score-section">
+        <h1 className="score">🪙 {clicks}</h1>
+        <p>Монет за клик: {lvl}</p>
+      </div>
+
+      <div className="hamster-container">
+        {/* Вместо картинки можно вставить эмодзи или фото хомяка */}
+        <div className="hamster-circle" onClick={addClick}>
+          🐹
         </div>
-      ) : (
-        <p>Загружаем пользователя...</p>
+      </div>
 
-      )}
-
-      <button
-        onClick={() => {
-          window.Telegram.WebApp.showAlert("Это кнопка внутри сайта");
-        }}
-      >
-        Нажми меня
+      <button className="click-btn" onClick={addClick}>
+        ТАПАЙ!
       </button>
     </div>
   );
